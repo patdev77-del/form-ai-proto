@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia';
+import { useStorage } from '@vueuse/core';
 
 export const useFormStore = defineStore('form', {
   state: () => ({
     // Initial basic schema
-    schema: {
+    schema: useStorage('form-schema', {
       components: [
         { type: 'textfield', key: 'firstName', label: 'First Name', input: true },
         { type: 'button', key: 'submit', label: 'Submit', action: 'submit' },
       ],
-    },
+    }),
     isAiLoading: false,
   }),
   actions: {

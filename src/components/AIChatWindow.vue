@@ -1,24 +1,20 @@
 <script setup>
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import { useFormStore } from '../stores/formStore';
-  import axios from 'axios';
+  import { useDraggable, useFileDialog, useBase64, useFetch } from '@vueuse/core';
 
   const store = useFormStore();
   const prompt = ref('');
-  const fileInput = ref(null);
-  const attachedImage = ref(null); // Stores the Base64 string
 
-  // 1. Convert Image to Base64
-  function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  // 1. Convert Image to Base64 via VueUse
+  const { files, open, reset: resetFiles } = useFileDialog({
+    accept: 'image/*',
+    multiple: false,
+  });
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      attachedImage.value = e.target.result; // This is the data:image/png;base64,... string
-    };
-    reader.readAsDataURL(file);
-  }
+  // Reactive computed for the first selected file
+  const selectedFile = computed(() => files.value?.[0]);
+  const { base64: attachedImage } = useBase64(selectedFile);
 
   // 2. Send to OpenAI with Vision support
   async function sendToAI() {
@@ -36,42 +32,62 @@
       });
     }
 
-    try {
-      const res = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
+    const { data, error } = await useFetch('https://api.openai.com/v1/chat/completions', {
+      headers: { 
+        Authorization: `Bearer ${import.meta.env.VITE_OPENAI_KEY}`,
+        'Content-Type': 'application/json'
+      },
+    }).post({
+      model: 'gpt-4o',
+      messages: [
         {
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'system',
-              content:
-                'You are a Form.io expert. Return ONLY valid JSON. Ignore logos or decorative elements; focus only on inputs, labels, and buttons.',
-            },
-            { role: 'user', content: userContent },
-          ],
-          response_format: { type: 'json_object' },
+          role: 'system',
+          content: 'You are a Form.io expert. Return ONLY valid JSON. Ignore logos or decorative elements; focus only on inputs, labels, and buttons.',
         },
-        {
-          headers: { Authorization: `Bearer ${import.meta.env.VITE_OPENAI_KEY}` },
-        },
-      );
+        { role: 'user', content: userContent },
+      ],
+      response_format: { type: 'json_object' },
+    }).json();
 
-      store.updateSchema(JSON.parse(res.data.choices[0].message.content));
+    store.isAiLoading = false;
 
+    if (error.value) {
+      console.error('Vision Error:', error.value);
+    } else if (data.value) {
+      store.updateSchema(JSON.parse(data.value.choices[0].message.content));
+      
       // Reset state
       prompt.value = '';
-      attachedImage.value = null;
-    } catch (err) {
-      console.error('Vision Error:', err);
-    } finally {
-      store.isAiLoading = false;
+      resetFiles();
     }
   }
+
+  // --- Dragging Logic with VueUse ---
+  const chatWidget = ref(null);
+  const chatHeader = ref(null);
+
+  const initialX = typeof window !== 'undefined' ? window.innerWidth - 370 : 0;
+  const initialY = typeof window !== 'undefined' ? window.innerHeight - 450 : 0;
+
+  const { style, isDragging } = useDraggable(chatWidget, {
+    handle: chatHeader,
+    initialValue: { x: initialX, y: initialY }
+  });
 </script>
 
 <template>
-  <div class="chat-widget">
-    <div class="chat-header">AI Form Assistant</div>
+  <div 
+    ref="chatWidget"
+    class="chat-widget"
+    :style="style"
+  >
+    <div 
+      ref="chatHeader"
+      class="chat-header"
+      :style="{ cursor: isDragging ? 'grabbing' : 'grab' }"
+    >
+      AI Form Assistant
+    </div>
 
     <div class="chat-history">
       <p v-if="attachedImage" class="preview-text">📸 Image attached</p>
@@ -79,9 +95,7 @@
     </div>
 
     <div class="chat-input-area">
-      <input type="file" ref="fileInput" style="display: none" accept="image/*" @change="handleImageUpload" />
-
-      <button class="btn-icon" @click="fileInput.click()">📎</button>
+      <button class="btn-icon" @click="open()">📎</button>
 
       <input v-model="prompt" placeholder="Type a command..." @keyup.enter="sendToAI" />
 
@@ -95,8 +109,6 @@
 <style lang="css" scoped>
   .chat-widget {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
     width: 350px;
     background: white;
     border-radius: 12px;

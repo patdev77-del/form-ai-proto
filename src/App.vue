@@ -23,10 +23,11 @@
 </template>
 
 <script setup>
-  import { ref, computed, watch } from 'vue';
+  import { ref, watch } from 'vue';
   import { useFormStore } from './stores/formStore';
   import { FormBuilder, Form } from '@formio/vue';
   import AIChatWindow from './components/AIChatWindow.vue';
+  import { useDebounceFn } from '@vueuse/core';
 
   const store = useFormStore();
   const viewMode = ref('builder');
@@ -48,10 +49,10 @@
     store.updateSchema(schema);
   }
 
-  function onJsonInput() {
+  const onJsonInput = useDebounceFn(() => {
     // Update store from raw text input
     store.updateSchema(jsonString.value);
-  }
+  }, 300);
 </script>
 
 <style scoped>
