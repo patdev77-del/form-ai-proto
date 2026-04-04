@@ -14,7 +14,16 @@
 
       <section class="pane json-pane">
         <h3>JSON Schema</h3>
-        <textarea class="json-editor-textarea" v-model="jsonString" @input="onJsonInput" spellcheck="false"></textarea>
+        <div class="editor-container">
+          <JsonEditor
+            v-model:json="localSchema"
+            :mainMenuBar="false"
+            :navigationBar="false"
+            :statusBar="false"
+            class="jse-theme-dark"
+            @update:json="onJsonChange"
+          />
+        </div>
       </section>
 
       <AIChatWindow />
@@ -27,32 +36,42 @@
   import { useFormStore, type FormSchema } from './stores/formStore';
   import { FormBuilder, Form } from '@formio/vue';
   import AIChatWindow from './components/AIChatWindow.vue';
+  import JsonEditor from 'vue3-ts-jsoneditor';
   import { useDebounceFn } from '@vueuse/core';
 
   const store = useFormStore();
   const viewMode = ref<'builder' | 'preview'>('builder');
 
-  // Local sync for the textarea to avoid cursor jumping
-  const jsonString = ref(JSON.stringify(store.schema, null, 2));
+  // Create a clean local copy for the editor to avoid DataCloneError
+  const localSchema = ref<FormSchema>(JSON.parse(JSON.stringify(store.schema)));
 
-  // Sync store -> textarea
+  // Sync Store -> Editor (when AI or Visual Builder updates the store)
   watch(
     () => store.schema,
     (newVal) => {
-      jsonString.value = JSON.stringify(newVal, null, 2);
+      // Create a deep copy to strip any non-serializable properties added by Formio
+      const cleanSchema = JSON.parse(JSON.stringify(newVal));
+      
+      // Only update if it's actually different to avoid circular loops
+      if (JSON.stringify(cleanSchema) !== JSON.stringify(localSchema.value)) {
+        localSchema.value = cleanSchema;
+      }
     },
     { deep: true },
   );
+
+  // Sync Editor -> Store (when user edits JSON manually)
+  const onJsonChange = useDebounceFn((newSchema: any) => {
+    if (newSchema && typeof newSchema === 'object') {
+      // Stripping potential proxies or non-serializable junk from the editor too
+      store.updateSchema(JSON.parse(JSON.stringify(newSchema)));
+    }
+  }, 500);
 
   function onBuilderChange(schema: FormSchema) {
     // Update store from visual builder
     store.updateSchema(schema);
   }
-
-  const onJsonInput = useDebounceFn(() => {
-    // Update store from raw text input
-    store.updateSchema(jsonString.value);
-  }, 300);
 </script>
 
 <style scoped>
@@ -117,29 +136,24 @@
   border-bottom: 1px solid #333;
 }
 
-/* The actual Textarea */
-.json-editor-textarea {
+/* The actual Editor Container */
+.editor-container {
   flex: 1;
-  background: transparent;
-  color: #d4d4d4; /* Off-white text */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.jse-main) {
   border: none;
-  padding: 20px;
-  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  resize: none;
-  outline: none;
-  tab-size: 2;
-  transition: color 0.2s ease;
+}
+
+:deep(.jse-contents) {
+  border: none;
 }
 
 /* Subtle glow when the AI is updating the JSON */
 .json-pane.is-updating {
   box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.3);
-}
-
-/* Selection color */
-.json-editor-textarea::selection {
-  background: #264f78;
 }
 </style>

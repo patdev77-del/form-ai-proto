@@ -69,8 +69,8 @@
   const chatWidget = ref<HTMLElement | null>(null);
   const chatHeader = ref<HTMLElement | null>(null);
 
-  const initialX = typeof window !== 'undefined' ? window.innerWidth - 370 : 0;
-  const initialY = typeof window !== 'undefined' ? window.innerHeight - 450 : 0;
+  const initialX = typeof window !== 'undefined' ? window.innerWidth - 570 : 0;
+  const initialY = typeof window !== 'undefined' ? window.innerHeight - 460 : 0;
 
   const { style, isDragging } = useDraggable(chatWidget, {
     handle: chatHeader,
@@ -112,7 +112,7 @@
 <style lang="css" scoped>
   .chat-widget {
     position: fixed;
-    width: 500px;
+    width: 550px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
