@@ -22,15 +22,15 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { useFormStore } from './stores/formStore';
+  import { useFormStore, type FormSchema } from './stores/formStore';
   import { FormBuilder, Form } from '@formio/vue';
   import AIChatWindow from './components/AIChatWindow.vue';
   import { useDebounceFn } from '@vueuse/core';
 
   const store = useFormStore();
-  const viewMode = ref('builder');
+  const viewMode = ref<'builder' | 'preview'>('builder');
 
   // Local sync for the textarea to avoid cursor jumping
   const jsonString = ref(JSON.stringify(store.schema, null, 2));
@@ -44,7 +44,7 @@
     { deep: true },
   );
 
-  function onBuilderChange(schema) {
+  function onBuilderChange(schema: FormSchema) {
     // Update store from visual builder
     store.updateSchema(schema);
   }

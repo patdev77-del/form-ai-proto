@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed } from 'vue';
   import { useFormStore } from '../stores/formStore';
   import { useDraggable, useFileDialog, useBase64, useFetch } from '@vueuse/core';
@@ -23,7 +23,7 @@
     store.isAiLoading = true;
 
     // Prepare messages array
-    const userContent = [{ type: 'text', text: prompt.value || 'Convert this image into a Form.io JSON schema.' }];
+    const userContent: any[] = [{ type: 'text', text: prompt.value || 'Convert this image into a Form.io JSON schema.' }];
 
     if (attachedImage.value) {
       userContent.push({
@@ -54,7 +54,10 @@
     if (error.value) {
       console.error('Vision Error:', error.value);
     } else if (data.value) {
-      store.updateSchema(JSON.parse(data.value.choices[0].message.content));
+      const content = data.value.choices[0].message.content;
+      if (content) {
+        store.updateSchema(JSON.parse(content));
+      }
       
       // Reset state
       prompt.value = '';
@@ -63,8 +66,8 @@
   }
 
   // --- Dragging Logic with VueUse ---
-  const chatWidget = ref(null);
-  const chatHeader = ref(null);
+  const chatWidget = ref<HTMLElement | null>(null);
+  const chatHeader = ref<HTMLElement | null>(null);
 
   const initialX = typeof window !== 'undefined' ? window.innerWidth - 370 : 0;
   const initialY = typeof window !== 'undefined' ? window.innerHeight - 450 : 0;
@@ -97,7 +100,7 @@
     <div class="chat-input-area">
       <button class="btn-icon" @click="open()">📎</button>
 
-      <input v-model="prompt" placeholder="Type a command..." @keyup.enter="sendToAI" />
+      <textarea v-model="prompt" placeholder="Type a command..." @keyup.enter="sendToAI" />
 
       <button class="btn-send" :disabled="store.isAiLoading" @click="sendToAI">
         {{ store.isAiLoading ? '...' : 'Send' }}
@@ -109,7 +112,7 @@
 <style lang="css" scoped>
   .chat-widget {
     position: fixed;
-    width: 350px;
+    width: 500px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -144,7 +147,7 @@
     gap: 8px;
   }
 
-  .chat-input-area input {
+  .chat-input-area textarea {
     flex: 1;
     padding: 8px;
     border: 1px solid #ddd;
