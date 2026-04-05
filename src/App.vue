@@ -2,8 +2,10 @@
   <div class="app-container">
     <header class="toolbar">
       <h1>Vue Form.io AI Architect</h1>
-      <button @click="viewMode = 'builder'">Builder</button>
-      <button @click="viewMode = 'preview'">Preview</button>
+      <div class="button-bar">
+        <button @click="viewMode = 'builder'">Builder</button>
+        <button @click="viewMode = 'preview'">Preview</button>
+      </div>
     </header>
 
     <main class="main-content">
@@ -89,10 +91,15 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    height: 60px;
+    height: 75px;
     background: #2c3e50;
     color: white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .toolbar button {
+    border-radius: 5px;
+    padding: 5px 10px;
   }
 
   .main-content {
