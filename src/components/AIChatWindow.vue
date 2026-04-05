@@ -2,9 +2,12 @@
   import { ref, computed } from 'vue';
   import { useFormStore } from '../stores/formStore';
   import { useDraggable, useFileDialog, useBase64, useFetch } from '@vueuse/core';
+  import { useAI } from '../composables/useAI';
 
   const store = useFormStore();
   const prompt = ref('');
+  
+  const { provider, ollamaModel, generateSchema } = useAI();
 
   // 1. Convert Image to Base64 via VueUse
   const { files, open, reset: resetFiles } = useFileDialog({
@@ -16,53 +19,12 @@
   const selectedFile = computed(() => files.value?.[0]);
   const { base64: attachedImage } = useBase64(selectedFile);
 
-  // 2. Send to OpenAI with Vision support
+  // 2. Send to AI
   async function sendToAI() {
     if (!prompt.value && !attachedImage.value) return;
-
-    store.isAiLoading = true;
-
-    // Prepare messages array
-    const userContent: any[] = [{ type: 'text', text: prompt.value || 'Convert this image into a Form.io JSON schema.' }];
-
-    if (attachedImage.value) {
-      userContent.push({
-        type: 'image_url',
-        image_url: { url: attachedImage.value },
-      });
-    }
-
-    const { data, error } = await useFetch('https://api.openai.com/v1/chat/completions', {
-      headers: { 
-        Authorization: `Bearer ${import.meta.env.VITE_OPENAI_KEY}`,
-        'Content-Type': 'application/json'
-      },
-    }).post({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a Form.io expert. Return ONLY valid JSON. Ignore logos or decorative elements; focus only on inputs, labels, and buttons.',
-        },
-        { role: 'user', content: userContent },
-      ],
-      response_format: { type: 'json_object' },
-    }).json();
-
-    store.isAiLoading = false;
-
-    if (error.value) {
-      console.error('Vision Error:', error.value);
-    } else if (data.value) {
-      const content = data.value.choices[0].message.content;
-      if (content) {
-        store.updateSchema(JSON.parse(content));
-      }
-      
-      // Reset state
-      prompt.value = '';
-      resetFiles();
-    }
+    await generateSchema(prompt.value, attachedImage.value);
+    prompt.value = '';
+    resetFiles();
   }
 
   // --- Dragging Logic with VueUse ---
@@ -95,6 +57,19 @@
     <div class="chat-history">
       <p v-if="attachedImage" class="preview-text">📸 Image attached</p>
       <p v-else>Describe your form or upload a screenshot.</p>
+    </div>
+
+    <div class="model-settings">
+      <select v-model="provider" class="provider-select">
+        <option value="openai">OpenAI (gpt-4o)</option>
+        <option value="ollama">Ollama (Local)</option>
+      </select>
+      <input 
+        v-if="provider === 'ollama'" 
+        v-model="ollamaModel" 
+        placeholder="Model (e.g. llava)" 
+        class="model-input"
+      />
     </div>
 
     <div class="chat-input-area">
@@ -138,6 +113,23 @@
     overflow-y: auto;
     font-size: 14px;
     background: #fdfdfd;
+  }
+
+  .model-settings {
+    padding: 8px 15px;
+    background: #f8f9fa;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 10px;
+  }
+
+  .provider-select, .model-input {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    flex: 1;
+    outline: none;
   }
 
   .chat-input-area {
