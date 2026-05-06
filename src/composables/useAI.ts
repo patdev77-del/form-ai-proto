@@ -14,12 +14,14 @@ export function useAI() {
     isGenerating.value = true;
 
     try {
-      const userContent: any[] = [{ type: 'text', text: promptText || 'Convert this image into a Form.io JSON schema.' }];
+      const userContent: any[] = [
+        { type: 'text', text: promptText || 'Convert this image into a Form.io JSON schema.' }
+      ];
 
       if (imageBase64) {
         userContent.push({
           type: 'image',
-          image: new URL(imageBase64),
+          image: new URL(imageBase64)
         });
       }
 
@@ -27,7 +29,7 @@ export function useAI() {
       const { generateText } = await import('ai');
 
       let aiModel;
-      
+
       if (provider.value === 'openai') {
         const openai = createOpenAI({ apiKey: import.meta.env.VITE_OPENAI_KEY });
         aiModel = openai('gpt-4o');
@@ -41,12 +43,16 @@ export function useAI() {
 
       const { text } = await generateText({
         model: aiModel,
-        system: 'You are a Form.io expert. Return ONLY valid JSON block. Ignore logos or decorative elements; focus only on inputs, labels, and buttons.',
-        messages: [{ role: 'user', content: userContent }],
+        system:
+          'You are a Form.io expert. Return ONLY valid JSON block. Ignore logos or decorative elements; focus only on inputs, labels, and buttons.',
+        messages: [{ role: 'user', content: userContent }]
       });
 
       if (text) {
-        const cleanedText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const cleanedText = text
+          .replace(/```json/gi, '')
+          .replace(/```/g, '')
+          .trim();
         try {
           store.updateSchema(JSON.parse(cleanedText));
         } catch (e) {
@@ -65,6 +71,6 @@ export function useAI() {
     provider,
     ollamaModel,
     isGenerating,
-    generateSchema,
+    generateSchema
   };
 }

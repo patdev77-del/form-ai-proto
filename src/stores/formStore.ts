@@ -1,6 +1,6 @@
-import { defineStore } from "pinia";
-import { useStorage } from "@vueuse/core";
-import { z } from "zod";
+import { defineStore } from 'pinia';
+import { useStorage } from '@vueuse/core';
+import { z } from 'zod';
 
 export const FormComponentSchema = z.looseObject({
   type: z.string(),
@@ -9,13 +9,16 @@ export const FormComponentSchema = z.looseObject({
   placeholder: z.string().optional(),
   input: z.boolean().default(true),
   action: z.string().optional(),
-  validate: z.object({
-    required: z.boolean().optional(),
-  }).catchall(z.any()).optional(),
+  validate: z
+    .object({
+      required: z.boolean().optional()
+    })
+    .catchall(z.any())
+    .optional()
 });
 
 export const FormSchemaSchema = z.looseObject({
-  components: z.array(FormComponentSchema),
+  components: z.array(FormComponentSchema)
 });
 
 export type FormComponent = z.infer<typeof FormComponentSchema>;
@@ -26,32 +29,32 @@ export interface FormState {
   isAiLoading: boolean;
 }
 
-export const useFormStore = defineStore("form", {
+export const useFormStore = defineStore('form', {
   state: (): FormState => ({
     // Initial basic schema
-    schema: useStorage<FormSchema>("form-schema", {
+    schema: useStorage<FormSchema>('form-schema', {
       components: [
-        { type: "textfield", key: "firstName", label: "First Name", input: true },
-        { type: "button", key: "submit", label: "Submit", input: false, action: "submit" },
-      ],
+        { type: 'textfield', key: 'firstName', label: 'First Name', input: true },
+        { type: 'button', key: 'submit', label: 'Submit', input: false, action: 'submit' }
+      ]
     }).value, // useStorage from @vueuse/core returns a Ref-like object for the value
-    isAiLoading: false,
+    isAiLoading: false
   }),
   actions: {
     updateSchema(newSchema: any) {
       try {
-        const parsedObject = typeof newSchema === "string" ? JSON.parse(newSchema) : newSchema;
-        
+        const parsedObject = typeof newSchema === 'string' ? JSON.parse(newSchema) : newSchema;
+
         // Zod Runtime Validation
         const validatedSchema = FormSchemaSchema.parse(parsedObject);
         this.schema = validatedSchema;
       } catch (e) {
         if (e instanceof z.ZodError) {
-          console.error("Zod Schema Validation Error:", e.issues);
+          console.error('Zod Schema Validation Error:', e.issues);
         } else {
-          console.error("Invalid JSON update rejected", e);
+          console.error('Invalid JSON update rejected', e);
         }
       }
-    },
-  },
+    }
+  }
 });

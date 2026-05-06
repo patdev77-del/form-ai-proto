@@ -34,96 +34,96 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
-  import { useFormStore, type FormSchema } from './stores/formStore';
-  import { FormBuilder, Form } from '@formio/vue';
-  import AIChatWindow from './components/AIChatWindow.vue';
-  import JsonEditor from 'vue3-ts-jsoneditor';
-  import { useDebounceFn } from '@vueuse/core';
+import { ref, watch } from 'vue';
+import { useFormStore, type FormSchema } from './stores/formStore';
+import { FormBuilder, Form } from '@formio/vue';
+import AIChatWindow from './components/AIChatWindow.vue';
+import JsonEditor from 'vue3-ts-jsoneditor';
+import { useDebounceFn } from '@vueuse/core';
 
-  const store = useFormStore();
-  const viewMode = ref<'builder' | 'preview'>('builder');
+const store = useFormStore();
+const viewMode = ref<'builder' | 'preview'>('builder');
 
-  // Create a clean local copy for the editor to avoid DataCloneError
-  const localSchema = ref<FormSchema>(JSON.parse(JSON.stringify(store.schema)));
+// Create a clean local copy for the editor to avoid DataCloneError
+const localSchema = ref<FormSchema>(JSON.parse(JSON.stringify(store.schema)));
 
-  // Sync Store -> Editor (when AI or Visual Builder updates the store)
-  watch(
-    () => store.schema,
-    (newVal) => {
-      // Create a deep copy to strip any non-serializable properties added by Formio
-      const cleanSchema = JSON.parse(JSON.stringify(newVal));
-      
-      // Only update if it's actually different to avoid circular loops
-      if (JSON.stringify(cleanSchema) !== JSON.stringify(localSchema.value)) {
-        localSchema.value = cleanSchema;
-      }
-    },
-    { deep: true },
-  );
+// Sync Store -> Editor (when AI or Visual Builder updates the store)
+watch(
+  () => store.schema,
+  (newVal) => {
+    // Create a deep copy to strip any non-serializable properties added by Formio
+    const cleanSchema = JSON.parse(JSON.stringify(newVal));
 
-  // Sync Editor -> Store (when user edits JSON manually)
-  const onJsonChange = useDebounceFn((newSchema: any) => {
-    if (newSchema && typeof newSchema === 'object') {
-      // Stripping potential proxies or non-serializable junk from the editor too
-      store.updateSchema(JSON.parse(JSON.stringify(newSchema)));
+    // Only update if it's actually different to avoid circular loops
+    if (JSON.stringify(cleanSchema) !== JSON.stringify(localSchema.value)) {
+      localSchema.value = cleanSchema;
     }
-  }, 500);
+  },
+  { deep: true }
+);
 
-  function onBuilderChange(schema: FormSchema) {
-    // Update store from visual builder
-    store.updateSchema(schema);
+// Sync Editor -> Store (when user edits JSON manually)
+const onJsonChange = useDebounceFn((newSchema: any) => {
+  if (newSchema && typeof newSchema === 'object') {
+    // Stripping potential proxies or non-serializable junk from the editor too
+    store.updateSchema(JSON.parse(JSON.stringify(newSchema)));
   }
+}, 500);
+
+function onBuilderChange(schema: FormSchema) {
+  // Update store from visual builder
+  store.updateSchema(schema);
+}
 </script>
 
 <style scoped>
-  /* Layout Containers */
-  .app-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background-color: #f8f9fa;
-    font-family: 'Inter', sans-serif;
-  }
+/* Layout Containers */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f8f9fa;
+  font-family: 'Inter', sans-serif;
+}
 
-  .toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    height: 75px;
-    background: #2c3e50;
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 75px;
+  background: #2c3e50;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
-  .toolbar button {
-    border-radius: 5px;
-    padding: 5px 10px;
-  }
+.toolbar button {
+  border-radius: 5px;
+  padding: 5px 10px;
+}
 
-  .main-content {
-    display: grid;
-    grid-template-columns: 1fr 450px; /* Adjust 450px to your preferred JSON sidebar width */
-    flex: 1;
-    overflow: hidden; /* Prevents whole page from scrolling */
-  }
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 450px; /* Adjust 450px to your preferred JSON sidebar width */
+  flex: 1;
+  overflow: hidden; /* Prevents whole page from scrolling */
+}
 
-  /* Pane Styling */
-  .pane {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow-y: auto;
-    border-right: 1px solid #dee2e6;
-    background: white;
-  }
+/* Pane Styling */
+.pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  border-right: 1px solid #dee2e6;
+  background: white;
+}
 
-  .visual-pane {
-    padding: 25px;
-  }
+.visual-pane {
+  padding: 25px;
+}
 
-  /* JSON Pane Container */
+/* JSON Pane Container */
 .json-pane {
   background-color: #1e1e1e; /* VS Code Dark background */
   display: flex;
