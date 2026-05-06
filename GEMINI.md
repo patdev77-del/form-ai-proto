@@ -12,12 +12,14 @@ This file is intended for high-level prompts, development focus items, and archi
 
 ## Folder Structure
 - `src/components/`: Vue components (e.g., `AIChatWindow.vue`)
-- `src/stores/`: Pinia state management (e.g., `formStore.js`)
+- `src/stores/`: Pinia state management (e.g., `formStore.ts`)
 - `src/App.vue`: Main application component
-- `src/main.js`: Setup and mount file
+- `src/main.ts`: Setup and mount file
 - `public/`: Static assets
 
 ## Scripts & Commands
 - `npm run dev`: Start the development server (runs `vite`)
 - `npm run build`: Build for production (runs `vite build`)
 - `npm run preview`: Locally preview the production build (runs `vite preview`)
+- `npm run lint`: Lint the codebase using ESLint
+- `npm run format`: Format the codebase using Prettier
